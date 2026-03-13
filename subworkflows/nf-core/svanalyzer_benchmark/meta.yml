@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "svanalyzer_benchmark"
+description: |
+  Benchmark structural variants by comparing a test VCF against a truth VCF using SVanalyzer svbenchmark.
+  Classifies variants into false positives, false negatives, and true positives (in both query and truth).
+keywords:
+  - structural variant
+  - sv
+  - benchmarking
+  - svanalyzer
+  - vcf
+components:
+  - svanalyzer/svbenchmark
+  - tabix/tabix
+  - bcftools/isec
+input:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample information
+        e.g. [ id:'test' ]
+  - ch_input:
+      type: file(s)
+      description: |
+        Input channel with test and truth VCF files, their indices, and optional BED regions
+        Structure: [ val(meta), path(test_vcf), path(test_tbi), path(truth_vcf), path(truth_tbi), path(bed) ]
+  - ch_fasta:
+      type: file
+      description: |
+        Reference genome FASTA file
+        Structure: [ val(meta2), path(fasta) ]
+      pattern: "*.{fasta,fa}"
+  - ch_fai:
+      type: file
+      description: |
+        Reference genome FASTA index
+        Structure: [ val(meta3), path(fai) ]
+      pattern: "*.fai"
+output:
+  - meta:
+      type: map
+      description: |
+        Groovy Map containing sample information
+        e.g. [ id:'test' ]
+  - fps:
+      type: file
+      description: |
+        False positive variants (in test but not in truth)
+        Structure: [ val(meta), path(vcf) ]
+      pattern: "*.falsepositives.vcf.gz"
+  - fns:
+      type: file
+      description: |
+        False negative variants (in truth but not in test)
+        Structure: [ val(meta), path(vcf) ]
+      pattern: "*.falsenegatives.vcf.gz"
+  - tp_comp:
+      type: file
+      description: |
+        True positive variants in the test/query VCF (test minus false positives)
+        Structure: [ val(meta), path(vcf) ]
+      pattern: "*.vcf.gz"
+  - tp_base:
+      type: file
+      description: |
+        True positive variants in the truth VCF (truth minus false negatives)
+        Structure: [ val(meta), path(vcf) ]
+      pattern: "*.vcf.gz"
+  - distances:
+      type: file
+      description: |
+        TSV file with genomic distances and size differences between matched variants
+        Structure: [ val(meta), path(distances) ]
+      pattern: "*.distances"
+  - report:
+      type: file
+      description: |
+        Text report with recall, precision, and F1 metrics
+        Structure: [ val(meta), path(report) ]
+      pattern: "*.report"
+authors:
+  - "@kubranarci"
+maintainers:
+  - "@kubranarci"

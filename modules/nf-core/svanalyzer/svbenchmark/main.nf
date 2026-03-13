@@ -45,8 +45,13 @@ process SVANALYZER_SVBENCHMARK {
         --prefix $prefix \\
         $bed_opt
 
-    bgzip ${args2} --threads ${task.cpus} -c ${prefix}.falsenegatives.vcf > ${prefix}.falsenegatives.vcf.gz
-    bgzip ${args2} --threads ${task.cpus} -c ${prefix}.falsepositives.vcf > ${prefix}.falsepositives.vcf.gz
+    # SVanalyzer outputs headerless VCFs — prepend headers from input VCFs for downstream compatibility
+    # FP records originate from test VCF, FN records originate from truth VCF
+    (zcat ${test} 2>/dev/null || cat ${test}) | grep '^#' > _fp_header.txt
+    (zcat ${truth} 2>/dev/null || cat ${truth}) | grep '^#' > _fn_header.txt
+
+    cat _fp_header.txt ${prefix}.falsepositives.vcf | bgzip ${args2} --threads ${task.cpus} -c > ${prefix}.falsepositives.vcf.gz
+    cat _fn_header.txt ${prefix}.falsenegatives.vcf | bgzip ${args2} --threads ${task.cpus} -c > ${prefix}.falsenegatives.vcf.gz
     """
 
     stub:
@@ -57,8 +62,8 @@ process SVANALYZER_SVBENCHMARK {
     def prefix = task.ext.prefix ?: "${meta.id}"
 
     """
-    echo "" | gzip > ${prefix}.falsenegatives.vcf.gz
-    echo "" | gzip > ${prefix}.falsepositives.vcf.gz
+    echo "" | bgzip -c > ${prefix}.falsenegatives.vcf.gz
+    echo "" | bgzip -c > ${prefix}.falsepositives.vcf.gz
     touch ${prefix}.distances
     touch ${prefix}.log
     touch ${prefix}.report
